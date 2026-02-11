@@ -61,45 +61,48 @@ class EbayClient:
         Fetches the MOST RECENT Sold Price for an item using the Finding API.
         Returns: (price, date_str, url)
         """
-        # Finding API Endpoint (Legacy but required for Sold Items)
+        # Finding API Endpoint
         if self.env == "SANDBOX":
             url = "https://svcs.sandbox.ebay.com/services/search/FindingService/v1"
         else:
             url = "https://svcs.ebay.com/services/search/FindingService/v1"
 
-        headers = {
-            "X-EBAY-SOA-OPERATION-NAME": "findCompletedItems",
-            "X-EBAY-SOA-SECURITY-APPNAME": self.app_id,
-            "X-EBAY-SOA-RESPONSE-DATA-FORMAT": "JSON"
-        }
-
-        # Construct Query
-        # Finding API handles exclusions via generic query string usually, or separate filters.
-        # Simple "-keyword" syntax works well in the keywords param.
+        # Construct Query with exclusions
         full_query = query
         if exclude_keywords:
             for word in exclude_keywords:
                 if word.strip():
                     full_query += f" -{word.strip()}"
 
+        # Finding API uses URL parameters, not JSON body
         params = {
+            "OPERATION-NAME": "findCompletedItems",
+            "SERVICE-VERSION": "1.0.0",
+            "SECURITY-APPNAME": self.app_id,
+            "RESPONSE-DATA-FORMAT": "JSON",
+            "REST-PAYLOAD": "",
             "keywords": full_query,
-            "categoryId": "1", # Collectibles & Art category hint, or remove if too specific. Let's keep it open.
-            "sortOrder": "EndTimeSoonest", # Most recently ended
+            "GLOBAL-ID": "EBAY-GB",  # UK marketplace
+            "sortOrder": "EndTimeSoonest",
+            "paginationInput.entriesPerPage": "1",
             "itemFilter(0).name": "SoldItemsOnly",
-            "itemFilter(0).value": "true",
-            "limit": "1"
+            "itemFilter(0).value": "true"
         }
 
         try:
             print(f"DEBUG: Finding Sold Items for '{query}'...")
-            response = requests.get(url, headers=headers, params=params)
+            response = requests.get(url, params=params)
             
             if response.status_code != 200:
-                print(f"Finding API Error: {response.text}")
+                print(f"Finding API Error ({response.status_code}): {response.text}")
                 return None, None, None
 
             data = response.json()
+            
+            # Check for API-level errors
+            if "errorMessage" in data:
+                print(f"Finding API Error: {data['errorMessage']}")
+                return None, None, None
             
             # Navigate JSON response: findCompletedItemsResponse -> searchResult -> item
             search_result = data.get("findCompletedItemsResponse", [{}])[0].get("searchResult", [{}])[0]
@@ -109,15 +112,13 @@ class EbayClient:
                 item = search_result.get("item", [])[0]
                 
                 # Get Price
-                # sellingStatus -> currentPrice -> __value__
                 selling_status = item.get("sellingStatus", [{}])[0]
                 price_obj = selling_status.get("currentPrice", [{}])[0]
                 price = float(price_obj.get("__value__", 0.0))
                 
                 # Get Date
-                # listingInfo -> endTime
                 listing_info = item.get("listingInfo", [{}])[0]
-                date_str = listing_info.get("endTime", [None])[0] # likely ISO format
+                date_str = listing_info.get("endTime", [None])[0]
                 
                 title = item.get("title", ["Unknown"])[0]
                 view_item_url = item.get("viewItemURL", ["#"])[0]
@@ -130,4 +131,6 @@ class EbayClient:
 
         except Exception as e:
             print(f"Finding API failed: {e}")
+            import traceback
+            traceback.print_exc()
             return None, None, None
