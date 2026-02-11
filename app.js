@@ -188,6 +188,35 @@ function render() {
     }
 }
 
+/* Sparkline Generator */
+function getSparkline(history) {
+    if (!history || history.length < 2) return '';
+
+    // Sort by date
+    const sorted = [...history].sort((a, b) => new Date(a.date) - new Date(b.date));
+    // Take last 7 points or all if less
+    const points = sorted.slice(-10);
+
+    const min = Math.min(...points.map(p => p.price));
+    const max = Math.max(...points.map(p => p.price));
+    const range = max - min || 1; // Avoid divide by zero
+
+    const width = 120;
+    const height = 30;
+
+    // Generate path
+    let d = `M 0 ${height - ((points[0].price - min) / range * height)}`;
+    points.forEach((p, i) => {
+        const x = (i / (points.length - 1)) * width;
+        const y = height - ((p.price - min) / range * height);
+        d += ` L ${x} ${y}`;
+    });
+
+    return `<svg class="sparkline-svg" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none">
+        <path class="sparkline-path" d="${d}" />
+    </svg>`;
+}
+
 function renderDashboard() {
     const searchTerm = elements.searchInput.value.toLowerCase();
     const filteredItems = state.items.filter(item =>
@@ -228,33 +257,64 @@ function renderDashboard() {
     elements.itemsList.innerHTML = '';
 
     if (filteredItems.length === 0) {
-        elements.itemsList.innerHTML = `<div class="card text-muted" style="grid-column: 1/-1; text-align: center;">No items found matching "${searchTerm}".</div>`;
+        elements.itemsList.innerHTML = `<div style="padding: 24px; text-align: center; color: #666;">No items found matching "${searchTerm}".</div>`;
         return;
     }
 
     filteredItems.forEach(item => {
         const category = item.category || 'Uncategorized';
-        const card = document.createElement('div');
-        card.className = 'card';
-        card.innerHTML = `
-            <div class="flex justify-between items-center mb-4">
-                <span class="text-muted" style="font-size: 11px; text-transform: uppercase;">${category}</span>
-                <button class="btn" style="padding: 2px 6px; font-size: 10px;" onclick="deleteItem(${item.id})">✕</button>
+        const excludeBadges = item.excludeKeywords ? item.excludeKeywords.split(',').map(w => `<span class="exclude-badge">-${w.trim()}</span>`).join(' ') : '';
+        const sparkline = getSparkline(item.priceHistory);
+
+        // Calculate Trend (Last v First in history or Last v Prev)
+        let trend = '';
+        if (item.priceHistory && item.priceHistory.length > 1) {
+            const current = item.price;
+            const prev = item.priceHistory[item.priceHistory.length - 2].price;
+            const diff = current - prev;
+            const pct = (diff / prev) * 100;
+            const color = diff > 0 ? '#10b981' : (diff < 0 ? '#ef4444' : '#64748b');
+            const arrow = diff > 0 ? '▲' : (diff < 0 ? '▼' : '▬');
+            trend = `<span style="color:${color}; font-size:11px;">${arrow} ${Math.abs(pct).toFixed(1)}%</span>`;
+        } else {
+            trend = `<span style="color:#64748b; font-size:11px;">New</span>`;
+        }
+
+        const row = document.createElement('div');
+        row.className = 'ticker-row';
+        row.innerHTML = `
+            <div class="item-name-cell">
+                <span class="item-name-main">${item.name}</span>
+                <div class="item-meta">
+                    <span class="tag-badge">${category}</span>
+                    ${excludeBadges}
+                </div>
             </div>
-            <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600;">${item.name}</h3>
-            <div class="text-xl font-bold text-accent">${formatCurrency(item.price || 0)}</div>
-
-            ${item.activeListingUrl
-                ? `<a href="${item.activeListingUrl}" target="_blank" class="btn" style="display: inline-block; margin-top: 8px; font-size: 11px; padding: 4px 8px; background: #3b82f6; color: white; border: none; text-decoration: none;">🔎 View Listing on eBay</a>`
-                : `<div style="font-size: 10px; color: #666; margin-top: 8px;">No link available (Try Check Prices)</div>`}
-
-            <div class="mt-4 flex justify-between items-center gap-2">
-                 <button class="btn" style="flex:1" onclick="openEditModal(${item.id})">Edit</button>
-                 <button class="btn" style="flex:1" onclick="openUpdateModal(${item.id})">Update Price</button>
-                 <button class="btn" style="flex:1" onclick="openHistoryModal(${item.id})">History</button>
+            
+            <div class="price-cell">${formatCurrency(item.price || 0)}</div>
+            
+            <div class="chart-cell">
+                ${sparkline}
+                <div style="position:absolute; bottom: -2px; right: 0;">${trend}</div>
+            </div>
+            
+            <div style="font-size: 11px; color: #888;">
+                ${item.priceHistory && item.priceHistory.length > 0 ? new Date(item.priceHistory[item.priceHistory.length - 1].date).toLocaleDateString() : 'Never'}
+            </div>
+            
+            <div>
+                 ${item.activeListingUrl
+                ? `<a href="${item.activeListingUrl}" target="_blank" style="color: #3b82f6; font-size: 12px; text-decoration: none;">View Item ↗</a>`
+                : `<span style="color: #444; font-size: 12px;">No Link</span>`}
+            </div>
+            
+            <div class="ticker-actions">
+                 <button class="btn-icon" onclick="openEditModal(${item.id})" title="Edit Settings">⚙</button>
+                 <button class="btn-icon" onclick="openHistoryModal(${item.id})" title="View History">📅</button>
+                 <button class="btn-icon" onclick="deleteItem(${item.id})" title="Delete Item" style="color: #ef4444; border-color: rgba(239,68,68,0.2);">✕</button>
             </div>
         `;
-        elements.itemsList.appendChild(card);
+        elements.itemsList.appendChild(row);
     });
 }
 
