@@ -686,5 +686,28 @@ window.openEditModal = function (id) {
     elements.addItemForm.onsubmit = handleEditItemSubmit;
 };
 
+// --- Stats Toggle Logic (Added via Fix) ---
+elements.toggleStatsBtn = document.getElementById('toggle-stats-btn');
+elements.statsSection = document.getElementById('stats-section');
+let statsVisible = true;
+
+if (elements.toggleStatsBtn) {
+    elements.toggleStatsBtn.addEventListener('click', () => {
+        statsVisible = !statsVisible;
+        if (statsVisible) {
+            elements.statsSection.style.maxHeight = '500px';
+            elements.statsSection.style.opacity = '1';
+            elements.statsSection.style.marginBottom = '24px';
+            elements.toggleStatsBtn.textContent = "Hide Stats ▲";
+        } else {
+            elements.statsSection.style.maxHeight = '0';
+            elements.statsSection.style.opacity = '0';
+            elements.statsSection.style.marginBottom = '0';
+            elements.toggleStatsBtn.textContent = "Show Stats ▼";
+        }
+    });
+}
+
 // Init
 loadState();
+
