@@ -363,9 +363,10 @@ function renderDashboard() {
 }
 
 // --- Stats Toggle Logic (Moved from renderDashboard) ---
-elements.toggleStatsBtn = document.getElementById('toggle-stats-btn');
-elements.statsSection = document.getElementById('stats-section');
-let statsVisible = true;
+// --- Stats Toggle Logic (Moved to bottom) ---
+// elements.toggleStatsBtn = document.getElementById('toggle-stats-btn');
+// elements.statsSection = document.getElementById('stats-section');
+// let statsVisible = true;
 
 if (elements.toggleStatsBtn) {
     elements.toggleStatsBtn.addEventListener('click', () => {
