@@ -361,12 +361,14 @@ if (elements.toggleStatsBtn) {
     elements.toggleStatsBtn.addEventListener('click', () => {
         statsVisible = !statsVisible;
         if (statsVisible) {
-            elements.statsSection.style.display = 'grid';
+            elements.statsSection.style.maxHeight = '500px'; // Arbitrary large enough height
             elements.statsSection.style.opacity = '1';
+            elements.statsSection.style.marginBottom = '24px';
             elements.toggleStatsBtn.textContent = "Hide Stats ▲";
         } else {
-            elements.statsSection.style.display = 'none';
+            elements.statsSection.style.maxHeight = '0';
             elements.statsSection.style.opacity = '0';
+            elements.statsSection.style.marginBottom = '0';
             elements.toggleStatsBtn.textContent = "Show Stats ▼";
         }
     });
