@@ -530,9 +530,19 @@ async function updatePrice(e) {
 async function addItem(e) {
     e.preventDefault();
     const name = elements.itemNameInput.value;
-    const price = parseFloat(elements.itemPriceInput.value);
+    // Default to 0 if empty
+    const priceVal = elements.itemPriceInput.value;
+    const price = priceVal ? parseFloat(priceVal) : 0;
     const category = elements.itemCategoryInput.value;
-    await fetch('/api/items', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, category, price }) });
+    const excludeKeywords = elements.itemExcludeInput.value; // Get the specific input for this modal
+
+    // Note: The modal HTML ID for exclude input is 'item-exclude'
+    // but elements object might not have it mapped if I missed it.
+    // Let's check elements definition in a moment or just grab it directly here to be safe.
+    const excludeInput = document.getElementById('item-exclude');
+    const exclude = excludeInput ? excludeInput.value : "";
+
+    await fetch('/api/items', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, category, price, excludeKeywords: exclude }) });
     toggleModal(elements.addItemModal, false);
     await loadState();
 }
