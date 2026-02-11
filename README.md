@@ -32,6 +32,19 @@ A modern web application for tracking the value of collectibles (cards, wax, mag
 5.  **Open the App:**
     *   Go to `http://localhost:5000` in your browser.
 
+## 🛑 Common Mistakes (Read This!)
+*   **DO NOT double-click `index.html`** in your file folder. It will open as a file (`file:///`) and **will not work**. The app needs the Python server to be running.
+*   **Always leave the black terminal window open** while using the app. If you close it, the server stops.
+
+## 💻 How to Run on a New PC
+If you download this code to a new computer:
+1.  **Install Python** from python.org.
+2.  **Open Terminal/Command Prompt** in the project folder.
+3.  **Install Libraries:** `pip install -r requirements.txt`
+4.  **Create your keys:** Make a new `.env` file with your eBay keys (see Setup above).
+5.  **Start App:** Type `python server.py`.
+6.  **Use App:** Open `http://localhost:5000`.
+
 ## Deployment Notes
 
 **Important:** This application requires a Python backend to run. **It cannot be hosted fully on GitHub Pages.**
