@@ -469,6 +469,7 @@ window.openHistoryModal = function (id) {
 
 function renderHistoryList(item) {
     elements.historyListBody.innerHTML = '';
+    const sortedHistory = [...item.priceHistory].sort((a, b) => new Date(b.date) - new Date(a.date));
     sortedHistory.forEach((record, index) => {
         const tr = document.createElement('tr');
         tr.style.borderBottom = '1px solid var(--card-border)';
