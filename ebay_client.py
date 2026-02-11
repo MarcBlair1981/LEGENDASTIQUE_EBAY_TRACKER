@@ -91,13 +91,22 @@ class EbayClient:
 
         try:
             print(f"DEBUG: Finding Sold Items for '{query}'...")
+            print(f"DEBUG: Request URL: {url}")
+            print(f"DEBUG: Request params: {params}")
+            
             response = requests.get(url, params=params)
+            
+            print(f"DEBUG: Response status: {response.status_code}")
             
             if response.status_code != 200:
                 print(f"Finding API Error ({response.status_code}): {response.text}")
                 return None, None, None
 
             data = response.json()
+            
+            # Print full response for debugging
+            import json
+            print(f"DEBUG: Full API Response: {json.dumps(data, indent=2)[:500]}...")
             
             # Check for API-level errors
             if "errorMessage" in data:
@@ -108,6 +117,8 @@ class EbayClient:
             search_result = data.get("findCompletedItemsResponse", [{}])[0].get("searchResult", [{}])[0]
             count = int(search_result.get("@count", "0"))
 
+            print(f"DEBUG: Found {count} items")
+
             if count > 0:
                 item = search_result.get("item", [])[0]
                 
@@ -116,6 +127,10 @@ class EbayClient:
                 price_obj = selling_status.get("currentPrice", [{}])[0]
                 price = float(price_obj.get("__value__", 0.0))
                 
+                # Check if item was actually SOLD
+                selling_state = selling_status.get("sellingState", ["Unknown"])[0]
+                print(f"DEBUG: Selling State: {selling_state}")
+                
                 # Get Date
                 listing_info = item.get("listingInfo", [{}])[0]
                 date_str = listing_info.get("endTime", [None])[0]
@@ -123,8 +138,14 @@ class EbayClient:
                 title = item.get("title", ["Unknown"])[0]
                 view_item_url = item.get("viewItemURL", ["#"])[0]
 
-                print(f"Found SOLD item: {title} for £{price} on {date_str}")
-                return price, date_str, view_item_url
+                print(f"Found item: {title} for £{price} (State: {selling_state}) on {date_str}")
+                
+                # Only return if actually sold
+                if selling_state == "EndedWithSales":
+                    return price, date_str, view_item_url
+                else:
+                    print(f"WARNING: Item was not sold (state: {selling_state}), skipping...")
+                    return None, None, None
             else:
                 print(f"No sold listings found for '{query}'")
                 return None, None, None
