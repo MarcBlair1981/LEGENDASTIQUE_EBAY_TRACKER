@@ -191,11 +191,11 @@ function render() {
 function renderDashboard() {
     const searchTerm = elements.searchInput.value.toLowerCase();
     const filteredItems = state.items.filter(item =>
-        item.name.toLowerCase().includes(searchTerm) ||
-        item.category.toLowerCase().includes(searchTerm)
+        (item.name && item.name.toLowerCase().includes(searchTerm)) ||
+        (item.category && item.category.toLowerCase().includes(searchTerm))
     );
 
-    const totalVal = state.items.reduce((sum, item) => sum + Number(item.price), 0);
+    const totalVal = state.items.reduce((sum, item) => sum + Number(item.price || 0), 0);
     elements.totalValue.textContent = formatCurrency(totalVal);
     elements.totalItems.textContent = state.items.length;
 
@@ -218,29 +218,36 @@ function renderDashboard() {
         elements.lastCheckTime.textContent = "Never";
     }
 
-    renderChart();
+    try {
+        renderChart();
+    } catch (e) {
+        console.error("Chart render failed:", e);
+        elements.chartContainer.innerHTML = '<div class="text-danger p-4">Chart Error</div>';
+    }
+
     elements.itemsList.innerHTML = '';
 
     if (filteredItems.length === 0) {
-        elements.itemsList.innerHTML = `<div class="card text-muted" style="grid-column: 1/-1; text-align: center;">No items found.</div>`;
+        elements.itemsList.innerHTML = `<div class="card text-muted" style="grid-column: 1/-1; text-align: center;">No items found matching "${searchTerm}".</div>`;
         return;
     }
 
     filteredItems.forEach(item => {
+        const category = item.category || 'Uncategorized';
         const card = document.createElement('div');
         card.className = 'card';
         card.innerHTML = `
             <div class="flex justify-between items-center mb-4">
-                <span class="text-muted" style="font-size: 11px; text-transform: uppercase;">${item.category}</span>
+                <span class="text-muted" style="font-size: 11px; text-transform: uppercase;">${category}</span>
                 <button class="btn" style="padding: 2px 6px; font-size: 10px;" onclick="deleteItem(${item.id})">✕</button>
             </div>
             <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600;">${item.name}</h3>
-            <div class="text-xl font-bold text-accent">${formatCurrency(item.price)}</div>
-            
+            <div class="text-xl font-bold text-accent">${formatCurrency(item.price || 0)}</div>
+
             ${item.activeListingUrl
                 ? `<a href="${item.activeListingUrl}" target="_blank" class="btn" style="display: inline-block; margin-top: 8px; font-size: 11px; padding: 4px 8px; background: #3b82f6; color: white; border: none; text-decoration: none;">🔎 View Listing on eBay</a>`
                 : `<div style="font-size: 10px; color: #666; margin-top: 8px;">No link available (Try Check Prices)</div>`}
-            
+
             <div class="mt-4 flex justify-between items-center gap-2">
                  <button class="btn" style="flex:1" onclick="openEditModal(${item.id})">Edit</button>
                  <button class="btn" style="flex:1" onclick="openUpdateModal(${item.id})">Update Price</button>
