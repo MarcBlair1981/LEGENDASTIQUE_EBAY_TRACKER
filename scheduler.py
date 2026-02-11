@@ -50,20 +50,20 @@ class LegendastiqueScheduler:
     def _check_single_item_logic(self, item):
         name = item.get('name')
         try:
-            # Get the LOWEST ACTIVE price (Market Floor)
+            # Get the LAST SOLD price (Market Value)
             exclude_keywords = item.get('excludeKeywords', [])
             # Support both list and comma-separated string (just in case)
             if isinstance(exclude_keywords, str):
                 exclude_keywords = exclude_keywords.split(',')
                 
-            price, date_str, url = self.ebay_client.get_lowest_price(name, exclude_keywords)
+            price, date_str, url = self.ebay_client.get_last_sold_price(name, exclude_keywords)
             
             if price:
-                print(f"  Current active low: £{price}")
+                print(f"  Last Sold: £{price} on {date_str}")
                 self.data_manager.add_history_point(item['id'], date_str, price, url)
                 return {"id": item['id'], "name": name, "price": price, "url": url, "status": "success"}
             else:
-                print(f"  No active listings found for {name}")
+                print(f"  No sold listings found for {name}")
                 return {"id": item['id'], "name": name, "status": "no_listings"}
         except Exception as e:
             print(f"  Error checking {name}: {e}")
