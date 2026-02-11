@@ -94,9 +94,10 @@ body {
   margin: 0 auto;
 }
 
+/* Ticker Header - 7 Columns */
 .ticker-header {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr 1fr 1fr 0.5fr;
+  grid-template-columns: 2.5fr 1fr 1.5fr 0.8fr 1fr 0.8fr 0.5fr;
   padding: 12px 24px;
   background: rgba(255, 255, 255, 0.05);
   border-radius: 8px 8px 0 0;
@@ -109,7 +110,7 @@ body {
 
 .ticker-row {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr 1fr 1fr 0.5fr;
+  grid-template-columns: 2.5fr 1fr 1.5fr 0.8fr 1fr 0.8fr 0.5fr;
   padding: 16px 24px;
   background: var(--card-bg);
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);

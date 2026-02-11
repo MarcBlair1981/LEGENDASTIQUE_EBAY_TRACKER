@@ -217,6 +217,46 @@ function getSparkline(history) {
     </svg>`;
 }
 
+function renderChart() {
+    const allHistory = [];
+    state.items.forEach(item => {
+        if (item.priceHistory) {
+            item.priceHistory.forEach(h => {
+                allHistory.push({ date: new Date(h.date).getTime(), price: h.price, itemId: item.id });
+            });
+        }
+    });
+
+    if (allHistory.length === 0) {
+        elements.chartContainer.innerHTML = '<div class="flex items-center justify-center p-4 text-muted" style="height:100%">No history data</div>';
+        return;
+    }
+
+    // specific dates to plot (sorted unique dates)
+    const uniqueDates = [...new Set(allHistory.map(h => h.date))].sort((a, b) => a - b);
+
+    // Create data points
+    const dataPoints = uniqueDates.map(date => {
+        let total = 0;
+        state.items.forEach(item => {
+            // Find latest price for this item at or before 'date'
+            // If item has no history before this date, use 0 or acquisition cost? Let's use 0.
+            if (item.priceHistory) {
+                const relevantHistory = item.priceHistory
+                    .filter(h => new Date(h.date).getTime() <= date)
+                    .sort((a, b) => new Date(b.date) - new Date(a.date)); // desc
+
+                if (relevantHistory.length > 0) {
+                    total += relevantHistory[0].price;
+                }
+            }
+        });
+        return { value: total, date: date };
+    });
+
+    createSvgChart(elements.chartContainer, dataPoints);
+}
+
 function renderDashboard() {
     const searchTerm = elements.searchInput.value.toLowerCase();
     const filteredItems = state.items.filter(item =>
@@ -275,9 +315,9 @@ function renderDashboard() {
             const pct = (diff / prev) * 100;
             const color = diff > 0 ? '#10b981' : (diff < 0 ? '#ef4444' : '#64748b');
             const arrow = diff > 0 ? '▲' : (diff < 0 ? '▼' : '▬');
-            trend = `<span style="color:${color}; font-size:11px;">${arrow} ${Math.abs(pct).toFixed(1)}%</span>`;
+            trend = `<span style="color:${color}; font-size:11px; font-weight:600;">${arrow} ${Math.abs(pct).toFixed(1)}%</span>`;
         } else {
-            trend = `<span style="color:#64748b; font-size:11px;">New</span>`;
+            trend = `<span style="color:#64748b; font-size:11px;">-</span>`;
         }
 
         const row = document.createElement('div');
@@ -295,17 +335,20 @@ function renderDashboard() {
             
             <div class="chart-cell">
                 ${sparkline}
-                <div style="position:absolute; bottom: -2px; right: 0;">${trend}</div>
+            </div>
+            
+            <div style="display:flex; align-items:center;">
+                ${trend}
             </div>
             
             <div style="font-size: 11px; color: #888;">
-                ${item.priceHistory && item.priceHistory.length > 0 ? new Date(item.priceHistory[item.priceHistory.length - 1].date).toLocaleDateString() : 'Never'}
+                ${item.priceHistory && item.priceHistory.length > 0 ? new Date(item.priceHistory[item.priceHistory.length - 1].date).toLocaleDateString() : '-'}
             </div>
             
             <div>
                  ${item.activeListingUrl
-                ? `<a href="${item.activeListingUrl}" target="_blank" style="color: #3b82f6; font-size: 12px; text-decoration: none;">View Item ↗</a>`
-                : `<span style="color: #444; font-size: 12px;">No Link</span>`}
+                ? `<a href="${item.activeListingUrl}" target="_blank" style="color: #3b82f6; font-size: 12px; text-decoration: none;">View ↗</a>`
+                : `<span style="color: #444; font-size: 12px;">-</span>`}
             </div>
             
             <div class="ticker-actions">
