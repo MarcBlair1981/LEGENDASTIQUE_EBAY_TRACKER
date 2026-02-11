@@ -377,7 +377,7 @@ if (elements.toggleStatsBtn) {
 window.checkItemPrice = async function(id) {
     const btn = document.getElementById(`check - btn - ${ id } `);
     if (btn) {
-        btn.classList.add('spinning'); // Assume css rotation class or just manual text change
+        btn.classList.add('spinning');
         btn.textContent = '...';
         btn.disabled = true;
     }
@@ -394,7 +394,7 @@ window.checkItemPrice = async function(id) {
 } catch (e) {
     alert("Error checking price");
 } finally {
-    await loadState(); // Reload to show new price/updated time
+    await loadState();
 }
 };
 
