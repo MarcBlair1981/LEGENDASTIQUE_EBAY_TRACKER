@@ -436,14 +436,14 @@ function renderActivityFeed() {
         tr.style.borderBottom = '1px solid var(--card-border)';
         let sourceCell = '<span class="text-muted">-</span>';
         if (event.url) {
-            sourceCell = `< a href = "${event.url}" target = "_blank" class="text-accent" style = "text-decoration: underline;" > View Listing</a > `;
+            sourceCell = `<a href="${event.url}" target="_blank" class="text-accent" style="text-decoration: underline;">View Listing</a>`;
         }
         tr.innerHTML = `
-    < td style = "padding: 12px 8px;" > ${formatDate(event.date)}</td >
+            <td style="padding: 12px 8px;">${formatDate(event.date)}</td>
             <td style="padding: 12px 8px; font-weight: 600;">${event.item}</td>
             <td style="padding: 12px 8px;">${formatCurrency(event.price)}</td>
             <td style="padding: 12px 8px;">${sourceCell}</td>
-`;
+        `;
         elements.activityListBody.appendChild(tr);
     });
 }
@@ -469,21 +469,20 @@ window.openHistoryModal = function (id) {
 
 function renderHistoryList(item) {
     elements.historyListBody.innerHTML = '';
-    const sortedHistory = [...item.priceHistory].sort((a, b) => new Date(b.date) - new Date(a.date));
     sortedHistory.forEach((record, index) => {
         const tr = document.createElement('tr');
         tr.style.borderBottom = '1px solid var(--card-border)';
 
         let linkHtml = '';
         if (record.url) {
-            linkHtml = `< a href = "${record.url}" target = "_blank" title = "View Source" >🔗</a > `;
+            linkHtml = `<a href="${record.url}" target="_blank" title="View Source">🔗</a>`;
         }
 
         tr.innerHTML = `
-    < td style = "padding: 12px 8px;" > ${formatDate(record.date)}</td >
+            <td style="padding: 12px 8px;">${formatDate(record.date)}</td>
             <td style="padding: 12px 8px;">${formatCurrency(record.price)} ${linkHtml}</td>
             <td style="padding: 12px 8px;"><button class="btn" style="color:red" onclick="deleteHistoryEntry(${index})">Del</button></td>
-`;
+        `;
         elements.historyListBody.appendChild(tr);
     });
 }
