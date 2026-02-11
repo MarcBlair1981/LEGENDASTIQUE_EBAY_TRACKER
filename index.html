@@ -40,220 +40,170 @@
     <div class="wrap">
         <!-- Dashboard View -->
         <div id="dashboard-view">
-            <!-- Stats Row -->
-            <!-- Stats Row -->
-            <div class="stats-grid g3 mb-6">
-                <!-- Chart Card (First 2 columns) -->
-                <div class="card"
-                    style="grid-column: span 2; padding:0; overflow: hidden; height: 300px; position: relative;">
+            <!-- Top Section: Stats & Chart -->
+            <div class="stats-grid g3 mb-6" style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px;">
+                <!-- Chart Card (Left 2/3) -->
+                <div class="card" style="padding:0; overflow: hidden; height: 320px; position: relative;">
                     <div
-                        style="position: absolute; top: 16px; left: 16px; z-index: 10; font-size: 12px; font-weight: 600; text-transform: uppercase;">
-                        Portfolio Value History</div>
+                        style="position: absolute; top: 16px; left: 16px; z-index: 10; font-size: 12px; font-weight: 600; text-transform: uppercase; color: var(--text-muted);">
+                        Portfolio Value History
+                    </div>
                     <div id="chart-container" style="width:100%; height:100%;"></div>
                 </div>
 
-                <!-- Stats Column -->
-                <div class="flex"
-                    style="flex-direction: column; gap: 16px; justify-content: space-between; height: 300px;">
-                    <!-- Stats Grid -->
-                    <div class="stats-grid">
-                        <div class="visualization-container" id="chart-container"></div>
-                        <div class="stats-sidebar">
-                            <div class="stat-card">
-                                <h3>Total Portfolio Value</h3>
-                                <div class="stat-value" id="total-value">£0.00</div>
-                            </div>
-
-                            <div class="stat-card">
-                                <h3>Items Tracked</h3>
-                                <div class="stat-value" id="total-items">0</div>
-                            </div>
-
-                            <div class="stat-card">
-                                <h3>Last Automated Check</h3>
-                                <div class="stat-value" id="last-check" style="font-size: 1rem; color: #3b82f6;">Never
-                                </div>
-                            </div>
+                <!-- Stats Column (Right 1/3) -->
+                <div class="flex" style="flex-direction: column; gap: 16px; height: 320px;">
+                    <div class="card" style="flex:1; display:flex; flex-direction:column; justify-content:center;">
+                        <h3 class="text-muted" style="font-size:12px; text-transform:uppercase; margin:0;">Total
+                            Portfolio Value</h3>
+                        <div class="stat-value" id="total-value"
+                            style="font-size: 28px; font-weight:700; color:var(--text-primary); margin-top:8px;">£0.00
                         </div>
                     </div>
 
-                    <!-- Search & Ticker Header -->
-                    <div class="items-container">
-                        <input type="text" id="search-input" class="search-bar" placeholder="Filter ticker...">
-
-                        <div class="ticker-header">
-                            <div>Item / Category</div>
-                            <div>Current Price</div>
-                            <div>7-Day Trend</div>
-                            <div>Last Updated</div>
-                            <div>Link</div>
-                            <div style="text-align: right;">Actions</div>
-                        </div>
-                        <div id="items-list">
-                            <!-- Ticker rows injected here -->
-                        </div>
+                    <div class="card" style="flex:1; display:flex; flex-direction:column; justify-content:center;">
+                        <h3 class="text-muted" style="font-size:12px; text-transform:uppercase; margin:0;">Items Tracked
+                        </h3>
+                        <div class="stat-value" id="total-items"
+                            style="font-size: 28px; font-weight:700; color:var(--text-primary); margin-top:8px;">0</div>
                     </div>
 
-                    <!-- Add/Edit Modal (Updated) -->
-                    <div id="add-modal" class="modal">
-                        <div class="modal-content">
-                            <h2 id="modal-title">Add New Item</h2>
-                            <input type="hidden" id="edit-item-id">
-                            <div class="form-group">
-                                <label>Item Name (Be strict matching eBay title)</label>
-                                <input type="text" id="item-name"
-                                    placeholder="e.g. 1986 Fleer Michael Jordan #57 PSA 8">
-                            </div>
-                            <div class="form-group">
-                                <label>Category</label>
-                                <input type="text" id="item-category" placeholder="Card, Wax, Comic...">
-                            </div>
-                            <div class="form-group">
-                                <label>Acquisition Cost (Optional)</label>
-                                <input type="number" id="item-price" step="0.01" placeholder="0.00">
-                            </div>
-                            <div class="form-group"
-                                style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px; margin-top: 10px;">
-                                <label style="color: #fca5a5;">Exclusion Keywords (Important!)</label>
-                                <small style="display:block; color:#666; margin-bottom:4px;">Comma separated words to
-                                    ignore. e.g. "break, reprint, digital"</small>
-                                <input type="text" id="item-exclude" placeholder="break, box only, reprint"
-                                    style="border-color: rgba(239, 68, 68, 0.3);">
-                            </div>
-                            <div class="modal-actions">
-                                <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
-                                <button class="btn" onclick="saveItem()">Save Item</button>
-                            </div>
-                        </div>
-                    </div>style="overflow-x: auto;">
+                    <div class="card" style="flex:1; display:flex; flex-direction:column; justify-content:center;">
+                        <h3 class="text-muted" style="font-size:12px; text-transform:uppercase; margin:0;">Last Check
+                        </h3>
+                        <div class="stat-value" id="last-check-time"
+                            style="font-size: 16px; font-weight:600; color: var(--accent-primary); margin-top:8px;">
+                            Never</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ticker Section (Full Width Below) -->
+            <div class="items-container">
+                <input type="text" id="search-input" class="search-bar" placeholder="Filter ticker..."
+                    style="margin-bottom: 16px; background: rgba(0,0,0,0.2); border: 1px solid var(--card-border);">
+
+                <div class="ticker-header">
+                    <div>Item / Category</div>
+                    <div>Current Price</div>
+                    <div>Trend</div>
+                    <div>Last Updated</div>
+                    <div>Link</div>
+                    <div style="text-align: right;">Actions</div>
+                </div>
+                <div id="items-list">
+                    <!-- Ticker rows injected here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Activity View -->
+        <div id="activity-view" class="hidden">
+            <div class="card">
+                <h2 class="mb-4">Recent Sales Activity</h2>
+                <div style="overflow-x: auto;">
                     <table style="width: 100%; text-align: left; border-collapse: collapse;">
                         <thead>
                             <tr style="border-bottom: 1px solid var(--card-border);">
-                                <th style="padding: 12px;">Date</th>
-                                <th style="padding: 12px;">Item</th>
-                                <th style="padding: 12px;">Sold Price</th>
-                                <th style="padding: 12px;">Source</th>
+                                <th style="padding: 12px; color: var(--text-muted);">Date</th>
+                                <th style="padding: 12px; color: var(--text-muted);">Item</th>
+                                <th style="padding: 12px; color: var(--text-muted);">Sold Price</th>
+                                <th style="padding: 12px; color: var(--text-muted);">Source</th>
                             </tr>
                         </thead>
-                        <tbody id="activity-list-body">
-                            <!-- Activity injected here -->
-                        </tbody>
+                        <tbody id="activity-list-body"></tbody>
                     </table>
                 </div>
             </div>
         </div>
+
     </div>
 
-    <!-- Add Item Modal (Simple overlay for now, or just a hidden section to toggle) -->
-    <!-- Let's use a hidden section in the main view for simplicity in Vanilla JS -->
-    <div id="add-item-modal" class="card hidden"
-        style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 200; width: 400px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);">
-        <div class="flex justify-between items-center mb-4">
-            <h2>Add Collectible</h2>
-            <button id="close-modal-btn" class="btn" style="padding: 4px 8px;">✕</button>
+    <!-- MAIN ADD ITEM MODAL (ID matches app.js) -->
+    <div id="add-item-modal" class="modal hidden">
+        <div class="modal-content">
+            <h2 id="modal-title">Add New Item</h2>
+            <form id="add-item-form">
+                <div class="form-group">
+                    <label>Item Name (Match eBay Title)</label>
+                    <input type="text" id="item-name" placeholder="e.g. 1986 Fleer Michael Jordan #57 PSA 8" required>
+                </div>
+                <div class="form-group">
+                    <label>Category</label>
+                    <input type="text" id="item-category" placeholder="Card, Wax, Comic...">
+                </div>
+                <div class="form-group">
+                    <label>Acquisition Cost / Value</label>
+                    <input type="number" id="item-price" step="0.01" placeholder="0.00" required>
+                </div>
+                <div class="form-group"
+                    style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px; margin-top: 10px;">
+                    <label style="color: #fca5a5;">Exclusion Keywords</label>
+                    <small style="display:block; color:#666; margin-bottom:4px; font-size:10px;">Comma separated words
+                        to ignore in search</small>
+                    <input type="text" id="item-exclude" placeholder="break, box only, reprint"
+                        style="border-color: rgba(239, 68, 68, 0.3);">
+                </div>
+                <div class="modal-actions">
+                    <button type="button" id="close-modal-btn" class="btn btn-secondary">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Item</button>
+                </div>
+            </form>
         </div>
-
-        <form id="add-item-form">
-            <div class="mb-4">
-                <label for="item-name">Item Name</label>
-                <input type="text" id="item-name" placeholder="e.g. 1986 Fleer Michael Jordan #57" required>
-            </div>
-
-            <div class="mb-4">
-                <label for="item-category">Category</label>
-                <select id="item-category">
-                    <option value="card">Trading Card</option>
-                    <option value="sneaker">Sneaker</option>
-                    <option value="magazine">Magazine</option>
-                    <option value="wax">Sealed Wax/Box</option>
-                    <option value="other">Other</option>
-                </select>
-            </div>
-
-            <div class="mb-4">
-                <label for="item-price">Current Price ($)</label>
-                <input type="number" id="item-price" placeholder="0.00" step="0.01" required>
-            </div>
-
-            <div class="flex justify-between mt-4">
-                <button type="submit" class="btn" style="width: 100%;">Add to Collection</button>
-            </div>
-        </form>
     </div>
 
     <!-- Update Price Modal -->
-    <div id="update-price-modal" class="card hidden"
-        style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 200; width: 350px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);">
-        <div class="flex justify-between items-center mb-4">
-            <h2>Update Price</h2>
-            <button id="close-update-btn" class="btn" style="padding: 4px 8px;">✕</button>
+    <div id="update-price-modal" class="modal hidden">
+        <div class="modal-content">
+            <h2 id="modal-title">Update Price</h2>
+            <form id="update-price-form">
+                <input type="hidden" id="update-item-id">
+                <div class="form-group">
+                    <label id="update-item-label">New Price</label>
+                    <input type="number" id="update-item-price" step="0.01" required>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" id="close-update-btn" class="btn btn-secondary">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Price</button>
+                </div>
+            </form>
         </div>
-        <form id="update-price-form">
-            <input type="hidden" id="update-item-id">
-            <div class="mb-4">
-                <label id="update-item-label">New Price for Item</label>
-                <input type="number" id="update-item-price" step="0.01" required>
-            </div>
-            <div class="flex justify-between mt-4">
-                <button type="submit" class="btn" style="width: 100%;">Save New Price</button>
-            </div>
-        </form>
     </div>
 
     <!-- History Modal -->
-    <div id="history-modal" class="card hidden"
-        style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 200; width: 600px; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);">
-        <div class="flex justify-between items-center mb-4">
-            <h2 id="history-modal-title">Price History</h2>
-            <div class="flex gap-2">
-                <button class="btn"
-                    style="padding: 4px 8px; font-size: 12px; border-color: var(--danger); color: var(--danger);"
-                    onclick="clearHistory()">Clear All</button>
-                <button id="close-history-btn" class="btn" style="padding: 4px 8px;">✕</button>
+    <div id="history-modal" class="modal hidden" style="width: 600px; max-width: 95%;">
+        <!-- Content injected dynamically or matched structure -->
+        <div class="modal-content" style="height: 80vh; display: flex; flex-direction: column;">
+            <div class="flex justify-between items-center mb-4">
+                <h2 id="history-modal-title" style="margin:0">History</h2>
+                <button id="close-history-btn" class="btn btn-secondary">✕</button>
             </div>
-        </div>
 
-        <!-- Item Specific Chart -->
-        <div id="item-history-chart"
-            style="height: 200px; width: 100%; position: relative; margin-bottom: 20px; border-bottom: 1px solid var(--card-border);">
-            <!-- injected here -->
-        </div>
+            <div id="item-history-chart" style="height: 150px; width: 100%; margin-bottom: 20px;"></div>
 
-        <div class="mb-4 p-4 border rounded" style="border-color: var(--card-border); background: rgba(0,0,0,0.2);">
-            <h4 style="margin: 0 0 10px 0; font-size: 14px;">Add Historical Record</h4>
-            <form id="add-history-form" class="flex gap-2 items-end">
-                <div style="flex:1">
-                    <label>Date</label>
-                    <input type="date" id="history-date" required>
-                </div>
-                <div style="flex:1">
-                    <label>Price (£)</label>
-                    <input type="number" id="history-price" step="0.01" required>
-                </div>
-                <button type="submit" class="btn" style="height: 42px;">Add</button>
-            </form>
-        </div>
-
-        <div style="overflow-y: auto; flex: 1;">
-            <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
-                <thead>
-                    <tr style="text-align: left; border-bottom: 1px solid var(--card-border);">
-                        <th style="padding: 8px; color: var(--text-muted);">Date</th>
-                        <th style="padding: 8px; color: var(--text-muted);">Price</th>
-                        <th style="padding: 8px; color: var(--text-muted);">Action</th>
-                    </tr>
-                </thead>
-                <tbody id="history-list-body">
-                    <!-- Rows injected here -->
-                </tbody>
-            </table>
+            <div class="mb-4 p-4 border rounded" style="border-color: var(--card-border); background: rgba(0,0,0,0.2);">
+                <form id="add-history-form" class="flex gap-2 items-end">
+                    <div style="flex:1">
+                        <label>Date</label>
+                        <input type="date" id="history-date" required>
+                    </div>
+                    <div style="flex:1">
+                        <label>Price</label>
+                        <input type="number" id="history-price" step="0.01" required>
+                    </div>
+                    <button type="submit" class="btn">Add</button>
+                </form>
+            </div>
+            <div style="overflow-y: auto; flex: 1;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+                    <tbody id="history-list-body"></tbody>
+                </table>
+            </div>
         </div>
     </div>
 
     <div id="modal-backdrop" class="hidden"
         style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 150; backdrop-filter: blur(2px);">
-    </div>
-
     </div>
 
     <script src="app.js"></script>
