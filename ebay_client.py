@@ -56,7 +56,7 @@ class EbayClient:
             print(f"Error getting OAuth token: {e}")
             return None
 
-    def get_lowest_price(self, query):
+    def get_lowest_price(self, query, exclude_keywords=None):
         """
         Fetches the LOWEST Active 'Buy It Now' price for an item.
         Effective for determining current market floor.
@@ -72,9 +72,16 @@ class EbayClient:
             "X-EBAY-C-MARKETPLACE-ID": "EBAY_GB" 
         }
 
+        # Construct Query with Exclusions
+        full_query = query
+        if exclude_keywords:
+            for word in exclude_keywords:
+                if word.strip():
+                    full_query += f" -{word.strip()}"
+
         # Search for Fixed Price items, sort by Price Ascending
         params = {
-            "q": query,
+            "q": full_query,
             "filter": "buyingOptions:{FIXED_PRICE}", 
             "sort": "price", 
             "limit": 1

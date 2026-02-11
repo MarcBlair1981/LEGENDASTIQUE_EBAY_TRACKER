@@ -34,7 +34,12 @@ class LegendastiqueScheduler:
             print(f"Checking price for: {name}...")
             
             # Get the LOWEST ACTIVE price (Market Floor)
-            price, date_str, url = self.ebay_client.get_lowest_price(name)
+            exclude_keywords = item.get('excludeKeywords', [])
+            # Support both list and comma-separated string (just in case)
+            if isinstance(exclude_keywords, str):
+                exclude_keywords = exclude_keywords.split(',')
+                
+            price, date_str, url = self.ebay_client.get_lowest_price(name, exclude_keywords)
             
             if price:
                 print(f"  Current active low: £{price}")
