@@ -30,30 +30,43 @@ class LegendastiqueScheduler:
         results = []
         
         for item in items:
-            name = item.get('name')
-            print(f"Checking price for: {name}...")
-            
-            try:
-                # Get the LOWEST ACTIVE price (Market Floor)
-                exclude_keywords = item.get('excludeKeywords', [])
-                # Support both list and comma-separated string (just in case)
-                if isinstance(exclude_keywords, str):
-                    exclude_keywords = exclude_keywords.split(',')
-                    
-                price, date_str, url = self.ebay_client.get_lowest_price(name, exclude_keywords)
-                
-                if price:
-                    print(f"  Current active low: £{price}")
-                    self.data_manager.add_history_point(item['id'], date_str, price, url)
-                    results.append(f"✅ {name}: £{price}\n    Source: {url}")
-                else:
-                    print(f"  No active listings found for {name}")
-                    results.append(f"❌ {name}: No active listings found")
-            except Exception as e:
-                print(f"  Error checking {name}: {e}")
-                results.append(f"⚠️ Error checking {name}: {str(e)}")
+            result = self._check_single_item_logic(item)
+            results.append(result)
         
         print(f"[{datetime.now()}] Price check completed.")
         return results
+
+    def check_item_by_id(self, item_id):
+        """Checks price for a single item by ID"""
+        self.data_manager.reload_data()
+        items = self.data_manager.get_items()
+        item = next((i for i in items if i['id'] == item_id), None)
+        
+        if item:
+            print(f"[{datetime.now()}] Checking single item: {item.get('name')}")
+            return self._check_single_item_logic(item)
+        return {"error": "Item not found"}
+
+    def _check_single_item_logic(self, item):
+        name = item.get('name')
+        try:
+            # Get the LOWEST ACTIVE price (Market Floor)
+            exclude_keywords = item.get('excludeKeywords', [])
+            # Support both list and comma-separated string (just in case)
+            if isinstance(exclude_keywords, str):
+                exclude_keywords = exclude_keywords.split(',')
+                
+            price, date_str, url = self.ebay_client.get_lowest_price(name, exclude_keywords)
+            
+            if price:
+                print(f"  Current active low: £{price}")
+                self.data_manager.add_history_point(item['id'], date_str, price, url)
+                return {"id": item['id'], "name": name, "price": price, "url": url, "status": "success"}
+            else:
+                print(f"  No active listings found for {name}")
+                return {"id": item['id'], "name": name, "status": "no_listings"}
+        except Exception as e:
+            print(f"  Error checking {name}: {e}")
+            return {"id": item['id'], "name": name, "status": "error", "message": str(e)}
 
 scheduler = LegendastiqueScheduler()

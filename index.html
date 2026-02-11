@@ -41,7 +41,13 @@
         <!-- Dashboard View -->
         <div id="dashboard-view">
             <!-- Top Section: Stats & Chart -->
-            <div class="stats-grid g3 mb-6" style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px;">
+            <div class="flex justify-end mb-2">
+                <button id="toggle-stats-btn" class="btn btn-sm text-muted" style="font-size: 11px;">
+                    Hide Stats ▲
+                </button>
+            </div>
+            <div id="stats-section" class="stats-grid g3 mb-6"
+                style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px; transition: all 0.3s ease-out; overflow: hidden;">
                 <!-- Chart Card (Left 2/3) -->
                 <div class="card" style="padding:0; overflow: hidden; height: 320px; position: relative;">
                     <div

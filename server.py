@@ -77,6 +77,15 @@ def trigger_check():
         print(f"Manual check failed: {e}")
         return jsonify({"error": str(e)}), 500
 
+@app.route('/api/items/<int:item_id>/check', methods=['POST'])
+def check_single_item(item_id):
+    """Trigger price check for a single item"""
+    try:
+        result = scheduler.check_item_by_id(item_id)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 # --- Scheduler ---
 from scheduler import scheduler
 

@@ -351,12 +351,59 @@ function renderDashboard() {
                 : `<span style="color: #444; font-size: 12px;">-</span>`}
             </div>
             
-            <div class="ticker-actions">
-                 <button class="btn-icon" onclick="openEditModal(${item.id})" title="Edit Settings">⚙</button>
-                 <button class="btn-icon" onclick="openHistoryModal(${item.id})" title="View History">📅</button>
-                 <button class="btn-icon" onclick="deleteItem(${item.id})" title="Delete Item" style="color: #ef4444; border-color: rgba(239,68,68,0.2);">✕</button>
-            </div>
-        `;
+// ... existing code ...
+
+elements.toggleStatsBtn = document.getElementById('toggle-stats-btn');
+elements.statsSection = document.getElementById('stats-section');
+let statsVisible = true;
+
+if (elements.toggleStatsBtn) {
+    elements.toggleStatsBtn.addEventListener('click', () => {
+        statsVisible = !statsVisible;
+        if (statsVisible) {
+            elements.statsSection.style.display = 'grid';
+            elements.statsSection.style.opacity = '1';
+            elements.toggleStatsBtn.textContent = "Hide Stats ▲";
+        } else {
+            elements.statsSection.style.display = 'none';
+            elements.statsSection.style.opacity = '0';
+            elements.toggleStatsBtn.textContent = "Show Stats ▼";
+        }
+    });
+}
+
+window.checkItemPrice = async function(id) {
+    const btn = document.getElementById(`check - btn - ${ id } `);
+    if (btn) {
+        btn.classList.add('spinning'); // Assume css rotation class or just manual text change
+        btn.textContent = '...';
+        btn.disabled = true;
+    }
+    
+    try {
+        const res = await fetch(`/ api / items / ${ id }/check`, { method: 'POST' });
+    const result = await res.json();
+
+    if (result.status === 'success') {
+        // alert(`Updated: £${result.price}`);
+    } else {
+        alert(`Check failed: ${result.status}`);
+    }
+} catch (e) {
+    alert("Error checking price");
+} finally {
+    await loadState(); // Reload to show new price/updated time
+}
+};
+
+// ... inside renderDashboard actions ...
+<div class="ticker-actions" style="gap: 4px;">
+    <button id="check-btn-${item.id}" class="btn-icon" onclick="checkItemPrice(${item.id})" title="Check Price Now" style="color: #3b82f6;">↻</button>
+    <button class="btn-icon" onclick="openEditModal(${item.id})" title="Edit Settings">⚙</button>
+    <button class="btn-icon" onclick="openHistoryModal(${item.id})" title="View History">📅</button>
+    <button class="btn-icon" onclick="deleteItem(${item.id})" title="Delete Item" style="color: #ef4444;">✕</button>
+</div>
+`;
         elements.itemsList.appendChild(row);
     });
 }
@@ -388,14 +435,14 @@ function renderActivityFeed() {
         tr.style.borderBottom = '1px solid var(--card-border)';
         let sourceCell = '<span class="text-muted">-</span>';
         if (event.url) {
-            sourceCell = `<a href="${event.url}" target="_blank" class="text-accent" style="text-decoration: underline;">View Listing</a>`;
+            sourceCell = `< a href = "${event.url}" target = "_blank" class="text-accent" style = "text-decoration: underline;" > View Listing</a > `;
         }
         tr.innerHTML = `
-            <td style="padding: 12px 8px;">${formatDate(event.date)}</td>
+    < td style = "padding: 12px 8px;" > ${ formatDate(event.date) }</td >
             <td style="padding: 12px 8px; font-weight: 600;">${event.item}</td>
             <td style="padding: 12px 8px;">${formatCurrency(event.price)}</td>
             <td style="padding: 12px 8px;">${sourceCell}</td>
-        `;
+`;
         elements.activityListBody.appendChild(tr);
     });
 }
@@ -413,7 +460,7 @@ window.openHistoryModal = function (id) {
     const item = state.items.find(i => i.id === id);
     if (!item) return;
     currentEditingItemId = id;
-    elements.historyModalTitle.textContent = `History: ${item.name}`;
+    elements.historyModalTitle.textContent = `History: ${ item.name } `;
     toggleModal(elements.historyModal, true);
     renderHistoryList(item);
     renderItemChart(item);
@@ -428,14 +475,14 @@ function renderHistoryList(item) {
 
         let linkHtml = '';
         if (record.url) {
-            linkHtml = `<a href="${record.url}" target="_blank" title="View Source">🔗</a>`;
+            linkHtml = `< a href = "${record.url}" target = "_blank" title = "View Source" >🔗</a > `;
         }
 
         tr.innerHTML = `
-            <td style="padding: 12px 8px;">${formatDate(record.date)}</td>
+    < td style = "padding: 12px 8px;" > ${ formatDate(record.date) }</td >
             <td style="padding: 12px 8px;">${formatCurrency(record.price)} ${linkHtml}</td>
             <td style="padding: 12px 8px;"><button class="btn" style="color:red" onclick="deleteHistoryEntry(${index})">Del</button></td>
-        `;
+`;
         elements.historyListBody.appendChild(tr);
     });
 }
@@ -450,7 +497,7 @@ window.triggerPriceCheck = async function () {
         const response = await fetch('/api/check-prices', { method: 'POST' });
         const result = await response.json();
         if (response.ok) {
-            alert(`Check completed:\n\n${result.results.join('\n')}`);
+            alert(`Check completed: \n\n${ result.results.join('\n') } `);
             await loadState();
         } else {
             alert("Failed to check prices.");
@@ -468,7 +515,7 @@ window.openUpdateModal = function (id) {
     const item = state.items.find(i => i.id === id);
     if (!item) return;
     elements.updateItemId.value = item.id;
-    elements.updateItemLabel.textContent = `Update Price: ${item.name}`;
+    elements.updateItemLabel.textContent = `Update Price: ${ item.name } `;
     elements.updateItemPrice.value = item.price;
     toggleModal(elements.updatePriceModal, true);
     setTimeout(() => elements.updateItemPrice.focus(), 100);
@@ -476,7 +523,7 @@ window.openUpdateModal = function (id) {
 
 window.deleteItem = async function (id) {
     if (confirm("Delete item?")) {
-        await fetch(`/api/items/${id}`, { method: 'DELETE' });
+        await fetch(`/ api / items / ${ id } `, { method: 'DELETE' });
         await loadState();
     }
 };
@@ -485,9 +532,9 @@ async function updatePrice(e) {
     e.preventDefault();
     const id = parseInt(elements.updateItemId.value);
     const newPrice = parseFloat(elements.updateItemPrice.value);
-    await fetch(`/api/items/${id}/price`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ price: newPrice, date: new Date().toISOString() }) });
-    toggleModal(elements.updatePriceModal, false);
-    await loadState();
+    await fetch(`/ api / items / ${ id } /price`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ price: newPrice, date: new Date().toISOString() }) });
+toggleModal(elements.updatePriceModal, false);
+await loadState();
 }
 
 async function addHistoryEntry(e) {
