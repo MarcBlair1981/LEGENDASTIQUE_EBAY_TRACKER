@@ -33,21 +33,25 @@ class LegendastiqueScheduler:
             name = item.get('name')
             print(f"Checking price for: {name}...")
             
-            # Get the LOWEST ACTIVE price (Market Floor)
-            exclude_keywords = item.get('excludeKeywords', [])
-            # Support both list and comma-separated string (just in case)
-            if isinstance(exclude_keywords, str):
-                exclude_keywords = exclude_keywords.split(',')
+            try:
+                # Get the LOWEST ACTIVE price (Market Floor)
+                exclude_keywords = item.get('excludeKeywords', [])
+                # Support both list and comma-separated string (just in case)
+                if isinstance(exclude_keywords, str):
+                    exclude_keywords = exclude_keywords.split(',')
+                    
+                price, date_str, url = self.ebay_client.get_lowest_price(name, exclude_keywords)
                 
-            price, date_str, url = self.ebay_client.get_lowest_price(name, exclude_keywords)
-            
-            if price:
-                print(f"  Current active low: £{price}")
-                self.data_manager.add_history_point(item['id'], date_str, price, url)
-                results.append(f"✅ {name}: £{price}\n    Source: {url}")
-            else:
-                print(f"  No active listings found for {name}")
-                results.append(f"❌ {name}: No active listings found")
+                if price:
+                    print(f"  Current active low: £{price}")
+                    self.data_manager.add_history_point(item['id'], date_str, price, url)
+                    results.append(f"✅ {name}: £{price}\n    Source: {url}")
+                else:
+                    print(f"  No active listings found for {name}")
+                    results.append(f"❌ {name}: No active listings found")
+            except Exception as e:
+                print(f"  Error checking {name}: {e}")
+                results.append(f"⚠️ Error checking {name}: {str(e)}")
         
         print(f"[{datetime.now()}] Price check completed.")
         return results
