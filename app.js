@@ -464,43 +464,6 @@ window.triggerPriceCheck = async function () {
     }
 };
 
-window.openEditModal = function (id) {
-    // Reusing Add Item Modal as Edit
-    const item = state.items.find(i => i.id === id);
-    if (!item) return;
-    elements.addItemModal.classList.remove('hidden');
-    elements.modalBackdrop.classList.remove('hidden');
-    elements.itemNameInput.value = item.name;
-    elements.itemCategoryInput.value = item.category;
-    elements.itemPriceInput.value = item.price;
-    elements.itemPriceInput.disabled = true;
-
-    // Hijacking submit
-    const submitBtn = elements.addItemForm.querySelector('button[type="submit"]');
-    const originalText = submitBtn.textContent;
-    submitBtn.textContent = "Save Changes";
-
-    const diffHandler = async (e) => {
-        e.preventDefault();
-        const newName = elements.itemNameInput.value;
-        const newCategory = elements.itemCategoryInput.value;
-        if (newName) {
-            await fetch(`/api/items/${item.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: newName, category: newCategory }) });
-            await loadState();
-            closeAllModals();
-        }
-        // Cleanup happens in closeAllModals logic ideally, but here we just reset listeners
-        submitBtn.textContent = originalText;
-        elements.itemPriceInput.disabled = false;
-        elements.addItemForm.removeEventListener('submit', diffHandler);
-        elements.addItemForm.addEventListener('submit', addItem);
-        elements.addItemForm.reset();
-    };
-
-    elements.addItemForm.removeEventListener('submit', addItem);
-    elements.addItemForm.addEventListener('submit', diffHandler);
-};
-
 window.openUpdateModal = function (id) {
     const item = state.items.find(i => i.id === id);
     if (!item) return;
@@ -524,26 +487,6 @@ async function updatePrice(e) {
     const newPrice = parseFloat(elements.updateItemPrice.value);
     await fetch(`/api/items/${id}/price`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ price: newPrice, date: new Date().toISOString() }) });
     toggleModal(elements.updatePriceModal, false);
-    await loadState();
-}
-
-async function addItem(e) {
-    e.preventDefault();
-    const name = elements.itemNameInput.value;
-    // Default to 0 if empty
-    const priceVal = elements.itemPriceInput.value;
-    const price = priceVal ? parseFloat(priceVal) : 0;
-    const category = elements.itemCategoryInput.value;
-    const excludeKeywords = elements.itemExcludeInput.value; // Get the specific input for this modal
-
-    // Note: The modal HTML ID for exclude input is 'item-exclude'
-    // but elements object might not have it mapped if I missed it.
-    // Let's check elements definition in a moment or just grab it directly here to be safe.
-    const excludeInput = document.getElementById('item-exclude');
-    const exclude = excludeInput ? excludeInput.value : "";
-
-    await fetch('/api/items', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, category, price, excludeKeywords: exclude }) });
-    toggleModal(elements.addItemModal, false);
     await loadState();
 }
 
@@ -575,12 +518,15 @@ async function deleteHistoryEntry(index) {
 }
 
 // Event Listeners
-elements.addItemBtn.addEventListener('click', () => toggleModal(elements.addItemModal, true));
+// Event Listeners
+elements.addItemBtn.addEventListener('click', () => {
+    openAddModal();
+});
 elements.closeModalBtn.addEventListener('click', closeAllModals);
 elements.closeUpdateBtn.addEventListener('click', closeAllModals);
 elements.closeHistoryBtn.addEventListener('click', closeAllModals);
 elements.modalBackdrop.addEventListener('click', closeAllModals);
-elements.addItemForm.addEventListener('submit', addItem);
+// elements.addItemForm.addEventListener('submit', addItem); // REMOVED
 elements.updatePriceForm.addEventListener('submit', updatePrice);
 elements.addHistoryForm.addEventListener('submit', addHistoryEntry);
 elements.navDashboard.addEventListener('click', () => { state.currentView = 'dashboard'; render(); });
@@ -597,7 +543,101 @@ function closeAllModals() {
     elements.historyModal.classList.add('hidden');
     elements.modalBackdrop.classList.add('hidden');
     currentEditingItemId = null;
+
+    // Reset form state
+    elements.addItemForm.reset();
+    elements.itemPriceInput.disabled = false;
+    const submitBtn = elements.addItemForm.querySelector('button[type="submit"]');
+    submitBtn.textContent = "Save Item";
+    // Reset handler to default add
+    elements.addItemForm.onsubmit = handleAddItemSubmit;
 }
+
+// Handler functions
+async function handleAddItemSubmit(e) {
+    e.preventDefault();
+    const name = elements.itemNameInput.value;
+    const priceVal = elements.itemPriceInput.value;
+    const price = priceVal ? parseFloat(priceVal) : 0;
+    const category = elements.itemCategoryInput.value;
+    const excludeInput = document.getElementById('item-exclude');
+    const exclude = excludeInput ? excludeInput.value : "";
+
+    await fetch('/api/items', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, category, price, excludeKeywords: exclude })
+    });
+    closeAllModals();
+    await loadState();
+}
+
+async function handleEditItemSubmit(e) {
+    e.preventDefault();
+    if (!currentEditingItemId) return;
+
+    const newName = elements.itemNameInput.value;
+    const newCategory = elements.itemCategoryInput.value;
+    const priceVal = elements.itemPriceInput.value;
+    const newPrice = priceVal ? parseFloat(priceVal) : 0;
+
+    const excludeInput = document.getElementById('item-exclude');
+    const newExclude = excludeInput ? excludeInput.value : "";
+
+    if (newName) {
+        await fetch(`/api/items/${currentEditingItemId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                name: newName,
+                category: newCategory,
+                price: newPrice, // Allow updating acquisition cost
+                excludeKeywords: newExclude
+            })
+        });
+        await loadState();
+        closeAllModals();
+    }
+}
+
+function openAddModal() {
+    toggleModal(elements.addItemModal, true);
+    elements.addItemForm.reset();
+    elements.itemPriceInput.disabled = false;
+    document.getElementById('modal-title').textContent = "Add New Item";
+    const submitBtn = elements.addItemForm.querySelector('button[type="submit"]');
+    submitBtn.textContent = "Save Item";
+
+    elements.addItemForm.onsubmit = handleAddItemSubmit;
+}
+
+window.openEditModal = function (id) {
+    const item = state.items.find(i => i.id === id);
+    if (!item) return;
+
+    currentEditingItemId = id;
+
+    toggleModal(elements.addItemModal, true);
+    document.getElementById('modal-title').textContent = "Edit Item Settings";
+
+    elements.itemNameInput.value = item.name;
+    elements.itemCategoryInput.value = item.category;
+    elements.itemPriceInput.value = item.price;
+    // Enable price editing as per user request
+    elements.itemPriceInput.disabled = false;
+
+    // Populate Exclude Keywords
+    const excludeInput = document.getElementById('item-exclude');
+    if (excludeInput) {
+        excludeInput.value = item.excludeKeywords || "";
+    }
+
+    const submitBtn = elements.addItemForm.querySelector('button[type="submit"]');
+    submitBtn.textContent = "Save Changes";
+
+    // Set explicit edit handler
+    elements.addItemForm.onsubmit = handleEditItemSubmit;
+};
 
 // Init
 loadState();
