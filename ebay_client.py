@@ -56,102 +56,85 @@ class EbayClient:
             print(f"Error getting OAuth token: {e}")
             return None
 
-    def get_last_sold_price(self, query, exclude_keywords=None):
+    def get_lowest_market_price(self, query, exclude_keywords=None):
         """
-        Fetches the MOST RECENT Sold Price for an item using the Finding API.
+        Fetches the LOWEST Active 'Buy It Now' price from OTHER SELLERS.
+        Excludes listings from 'legendastique' to get true market price.
         Returns: (price, date_str, url)
         """
-        # Finding API Endpoint
-        if self.env == "SANDBOX":
-            url = "https://svcs.sandbox.ebay.com/services/search/FindingService/v1"
-        else:
-            url = "https://svcs.ebay.com/services/search/FindingService/v1"
+        token = self.get_access_token()
+        if not token:
+            return None, None, None
 
-        # Construct Query with exclusions
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json",
+            "X-EBAY-C-MARKETPLACE-ID": "EBAY_GB" 
+        }
+
+        # Construct Query with Exclusions
         full_query = query
+        
+        # Exclude the user's own seller name
+        full_query += " -legendastique"
+        
+        # Add user-defined exclusions
         if exclude_keywords:
             for word in exclude_keywords:
                 if word.strip():
                     full_query += f" -{word.strip()}"
 
-        # Finding API uses URL parameters, not JSON body
+        # Search for Fixed Price items, sort by Price Ascending
         params = {
-            "OPERATION-NAME": "findCompletedItems",
-            "SERVICE-VERSION": "1.0.0",
-            "SECURITY-APPNAME": self.app_id,
-            "RESPONSE-DATA-FORMAT": "JSON",
-            "REST-PAYLOAD": "",
-            "keywords": full_query,
-            "GLOBAL-ID": "EBAY-GB",  # UK marketplace
-            "sortOrder": "EndTimeSoonest",
-            "paginationInput.entriesPerPage": "1",
-            "itemFilter(0).name": "SoldItemsOnly",
-            "itemFilter(0).value": "true"
+            "q": full_query,
+            "filter": "buyingOptions:{FIXED_PRICE}", 
+            "sort": "price", 
+            "limit": 5  # Get top 5 to check sellers
         }
 
         try:
-            print(f"DEBUG: Finding Sold Items for '{query}'...")
-            print(f"DEBUG: Request URL: {url}")
-            print(f"DEBUG: Request params: {params}")
-            
-            response = requests.get(url, params=params)
-            
-            print(f"DEBUG: Response status: {response.status_code}")
+            print(f"DEBUG: Searching market price for '{query}' (excluding legendastique)...")
+            response = requests.get(self.browse_url, headers=headers, params=params)
             
             if response.status_code != 200:
-                print(f"Finding API Error ({response.status_code}): {response.text}")
+                print(f"Browse API Error: {response.text}")
                 return None, None, None
 
             data = response.json()
             
-            # Print full response for debugging
-            import json
-            print(f"DEBUG: Full API Response: {json.dumps(data, indent=2)[:500]}...")
-            
-            # Check for API-level errors
-            if "errorMessage" in data:
-                print(f"Finding API Error: {data['errorMessage']}")
-                return None, None, None
-            
-            # Navigate JSON response: findCompletedItemsResponse -> searchResult -> item
-            search_result = data.get("findCompletedItemsResponse", [{}])[0].get("searchResult", [{}])[0]
-            count = int(search_result.get("@count", "0"))
-
-            print(f"DEBUG: Found {count} items")
-
-            if count > 0:
-                item = search_result.get("item", [])[0]
+            if "itemSummaries" in data and len(data["itemSummaries"]) > 0:
+                # Filter out any remaining legendastique listings
+                valid_items = [
+                    item for item in data["itemSummaries"]
+                    if "legendastique" not in item.get("seller", {}).get("username", "").lower()
+                ]
+                
+                if not valid_items:
+                    print(f"  No listings found from other sellers for {query}")
+                    return None, None, None
+                
+                item = valid_items[0]  # Lowest priced item from other sellers
                 
                 # Get Price
-                selling_status = item.get("sellingStatus", [{}])[0]
-                price_obj = selling_status.get("currentPrice", [{}])[0]
-                price = float(price_obj.get("__value__", 0.0))
+                price_obj = item.get("price", {})
+                price = float(price_obj.get("value", 0.0))
                 
-                # Check if item was actually SOLD
-                selling_state = selling_status.get("sellingState", ["Unknown"])[0]
-                print(f"DEBUG: Selling State: {selling_state}")
+                # Use current time as "valuation date"
+                from datetime import datetime
+                date_str = datetime.now().isoformat()
                 
-                # Get Date
-                listing_info = item.get("listingInfo", [{}])[0]
-                date_str = listing_info.get("endTime", [None])[0]
-                
-                title = item.get("title", ["Unknown"])[0]
-                view_item_url = item.get("viewItemURL", ["#"])[0]
+                url = item.get("itemWebUrl")
+                title = item.get("title")
+                seller = item.get("seller", {}).get("username", "unknown")
 
-                print(f"Found item: {title} for £{price} (State: {selling_state}) on {date_str}")
-                
-                # Only return if actually sold
-                if selling_state == "EndedWithSales":
-                    return price, date_str, view_item_url
-                else:
-                    print(f"WARNING: Item was not sold (state: {selling_state}), skipping...")
-                    return None, None, None
+                print(f"  Found: {title} for £{price} (seller: {seller})")
+                return price, date_str, url
             else:
-                print(f"No sold listings found for '{query}'")
+                print(f"  No active listings found for {query}")
                 return None, None, None
 
         except Exception as e:
-            print(f"Finding API failed: {e}")
+            print(f"Browse API failed: {e}")
             import traceback
             traceback.print_exc()
             return None, None, None
