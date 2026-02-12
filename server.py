@@ -17,11 +17,17 @@ logger = logging.getLogger(__name__)
 def serve_index():
     return send_from_directory('.', 'index.html')
 
-@app.route('/<path:path>')
-def serve_static(path):
-    if os.path.exists(path):
-        return send_from_directory('.', path)
-    return serve_index()
+# Serve static files explicitly
+@app.route('/<path:filename>')
+def serve_static(filename):
+    # Only serve actual files, don't catch API routes
+    if filename.startswith('api/'):
+        return jsonify({"error": "Not found"}), 404
+    if os.path.exists(filename):
+        return send_from_directory('.', filename)
+    # For non-existent files, return 404 instead of index
+    return jsonify({"error": "File not found"}), 404
+
 
 # --- API Endpoints ---
 
