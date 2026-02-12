@@ -1,5 +1,6 @@
 from flask import Flask, request, jsonify, send_from_directory
 from data_manager import DataManager
+from scheduler import scheduler
 import os
 import logging
 
@@ -69,8 +70,6 @@ def trigger_check():
     try:
         # We call the logic directly from the scheduler instance
         # Note: This runs synchronously in the request thread, which might take time if many items.
-        # Ideally we'd trigger a job, but for immediate feedback we'll run it here.
-        # Ideally we'd trigger a job, but for immediate feedback we'll run it here.
         results = scheduler.check_prices_manual()
         return jsonify({"status": "success", "results": results})
     except Exception as e:
@@ -93,9 +92,6 @@ def check_single_item(item_id):
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
-
-# --- Scheduler ---
-from scheduler import scheduler
 
 def run_server():
     print("Starting Legendastique Server on http://localhost:5000")
