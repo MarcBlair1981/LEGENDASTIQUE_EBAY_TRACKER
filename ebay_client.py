@@ -117,6 +117,13 @@ class EbayClient:
             if "itemSummaries" in data and len(data["itemSummaries"]) > 0:
                 print(f"DEBUG: Found {len(data['itemSummaries'])} total items")
                 
+                # Debug: Show all sellers
+                for idx, item in enumerate(data["itemSummaries"]):
+                    seller_info = item.get("seller", {})
+                    seller_username = seller_info.get("username", "NO_USERNAME")
+                    item_title = item.get("title", "NO_TITLE")[:50]
+                    print(f"  Item {idx+1}: '{item_title}...' - Seller: '{seller_username}'")
+                
                 # Filter out any remaining legendastique listings
                 valid_items = [
                     item for item in data["itemSummaries"]
