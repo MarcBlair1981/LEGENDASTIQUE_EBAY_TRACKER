@@ -94,20 +94,36 @@ class EbayClient:
 
         try:
             print(f"DEBUG: Searching market price for '{query}' (excluding legendastique)...")
+            print(f"DEBUG: Full query string: '{full_query}'")
+            print(f"DEBUG: Using token: {token[:20]}..." if token else "DEBUG: No token!")
+            
             response = requests.get(self.browse_url, headers=headers, params=params)
             
+            print(f"DEBUG: Response status code: {response.status_code}")
+            
             if response.status_code != 200:
-                print(f"Browse API Error: {response.text}")
+                print(f"Browse API Error ({response.status_code}): {response.text[:500]}")
                 return None, None, None
 
             data = response.json()
             
+            # Check for API errors
+            if "errors" in data:
+                print(f"API returned errors: {data['errors']}")
+                return None, None, None
+            
+            print(f"DEBUG: Response keys: {data.keys()}")
+            
             if "itemSummaries" in data and len(data["itemSummaries"]) > 0:
+                print(f"DEBUG: Found {len(data['itemSummaries'])} total items")
+                
                 # Filter out any remaining legendastique listings
                 valid_items = [
                     item for item in data["itemSummaries"]
                     if "legendastique" not in item.get("seller", {}).get("username", "").lower()
                 ]
+                
+                print(f"DEBUG: After filtering: {len(valid_items)} items from other sellers")
                 
                 if not valid_items:
                     print(f"  No listings found from other sellers for {query}")
@@ -131,10 +147,12 @@ class EbayClient:
                 return price, date_str, url
             else:
                 print(f"  No active listings found for {query}")
+                print(f"  Response data: {str(data)[:200]}")
                 return None, None, None
 
         except Exception as e:
-            print(f"Browse API failed: {e}")
+            print(f"Browse API failed with exception: {e}")
+            print(f"Exception type: {type(e).__name__}")
             import traceback
             traceback.print_exc()
             return None, None, None
