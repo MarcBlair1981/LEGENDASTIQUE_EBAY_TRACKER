@@ -1,10 +1,12 @@
 from flask import Flask, request, jsonify, send_from_directory
+from flask_cors import CORS
 from data_manager import DataManager
 from scheduler import scheduler
 import os
 import logging
 
 app = Flask(__name__, static_folder='.')
+CORS(app)  # Enable CORS for all routes
 data_manager = DataManager()
 
 # Configure logging
