@@ -386,6 +386,7 @@ if (elements.toggleStatsBtn) {
 }
 
 window.checkItemPrice = async function (id) {
+    console.log(`Checking price for item ID: ${id}`);
     const btn = document.getElementById(`check-btn-${id}`);
     if (btn) {
         btn.classList.add('spinning');
@@ -394,16 +395,22 @@ window.checkItemPrice = async function (id) {
     }
 
     try {
+        console.log(`Fetching: /api/items/${id}/check`);
         const res = await fetch(`/api/items/${id}/check`, { method: 'POST' });
+        console.log(`Response status: ${res.status}`);
+
         const result = await res.json();
+        console.log('Result:', result);
 
         if (result.status === 'success') {
-            // alert(`Updated: £${result.price}`);
+            console.log(`Price updated: £${result.price}`);
         } else {
+            console.error('Check failed:', result);
             alert(`Check failed: ${result.status}`);
         }
     } catch (e) {
-        alert("Error checking price");
+        console.error('Error checking price:', e);
+        alert(`Error checking price: ${e.message}`);
     } finally {
         await loadState();
     }
