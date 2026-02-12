@@ -17,15 +17,28 @@ logger = logging.getLogger(__name__)
 def serve_index():
     return send_from_directory('.', 'index.html')
 
-# Serve static files explicitly
-@app.route('/<path:filename>')
-def serve_static(filename):
-    # Only serve actual files, don't catch API routes
-    if filename.startswith('api/'):
-        return jsonify({"error": "Not found"}), 404
-    if os.path.exists(filename):
-        return send_from_directory('.', filename)
-    # For non-existent files, return 404 instead of index
+# Serve specific static files only (not a catch-all)
+@app.route('/<path:filename>.js')
+@app.route('/<path:filename>.css')
+@app.route('/<path:filename>.html')
+@app.route('/<path:filename>.json')
+@app.route('/<path:filename>.png')
+@app.route('/<path:filename>.jpg')
+@app.route('/<path:filename>.ico')
+def serve_static_file(filename):
+    """Serve static files with known extensions"""
+    # Reconstruct the full filename with extension
+    import re
+    # Get the extension from the request path
+    ext = re.search(r'\.(js|css|html|json|png|jpg|ico)$', filename)
+    if ext:
+        full_filename = filename
+    else:
+        # This shouldn't happen due to route matching, but just in case
+        full_filename = filename + ext.group(0) if ext else filename
+    
+    if os.path.exists(full_filename):
+        return send_from_directory('.', full_filename)
     return jsonify({"error": "File not found"}), 404
 
 
