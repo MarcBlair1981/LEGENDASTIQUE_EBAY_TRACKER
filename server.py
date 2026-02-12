@@ -13,6 +13,18 @@ data_manager = DataManager()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+@app.before_request
+def log_request_info():
+    logger.info(f"Incoming Request: {request.method} {request.path}")
+
+@app.errorhandler(404)
+def page_not_found(e):
+    # Return JSON for API 404s, otherwise default HTML might be returned which breaks fetch
+    if request.path.startswith('/api/'):
+        return jsonify({"error": "Endpoint not found", "path": request.path}), 404
+    return e # let Flask handle static 404s or return default HTML
+
+
 @app.route('/')
 def serve_index():
     return send_from_directory('.', 'index.html')
