@@ -80,11 +80,19 @@ def trigger_check():
 @app.route('/api/items/<int:item_id>/check', methods=['POST'])
 def check_single_item(item_id):
     """Trigger price check for a single item"""
+    print(f"\n=== CHECK SINGLE ITEM CALLED ===")
+    print(f"Item ID: {item_id}")
     try:
+        print(f"Calling scheduler.check_item_by_id({item_id})...")
         result = scheduler.check_item_by_id(item_id)
+        print(f"Result: {result}")
         return jsonify(result)
     except Exception as e:
+        print(f"ERROR in check_single_item: {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({"error": str(e)}), 500
+
 
 # --- Scheduler ---
 from scheduler import scheduler
