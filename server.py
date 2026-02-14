@@ -39,19 +39,13 @@ def serve_index():
 @app.route('/<path:filename>.ico')
 def serve_static_file(filename):
     """Serve static files with known extensions"""
-    # Reconstruct the full filename with extension
-    import re
-    # Get the extension from the request path
-    ext = re.search(r'\.(js|css|html|json|png|jpg|ico)$', filename)
-    if ext:
-        full_filename = filename
-    else:
-        # This shouldn't happen due to route matching, but just in case
-        full_filename = filename + ext.group(0) if ext else filename
+    # The route decorator strips the extension, so we need to get the full path
+    # request.path starts with '/', so we strip it to get the relative filename
+    full_filename = request.path.lstrip('/')
     
     if os.path.exists(full_filename):
         return send_from_directory('.', full_filename)
-    return jsonify({"error": "File not found"}), 404
+    return jsonify({"error": "File not found", "path": full_filename}), 404
 
 
 # --- API Endpoints ---
@@ -109,6 +103,18 @@ def trigger_check():
         print(f"Manual check failed: {e}")
         return jsonify({"error": str(e)}), 500
 
+@app.route('/api/settings', methods=['GET'])
+def get_settings():
+    return jsonify(data_manager.get_settings())
+
+@app.route('/api/settings', methods=['POST'])
+def update_settings():
+    try:
+        updates = request.json
+        return jsonify(data_manager.update_settings(updates))
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
 @app.route('/api/items/<int:item_id>/check', methods=['POST'])
 def check_single_item(item_id):
     """Trigger price check for a single item"""
@@ -127,13 +133,14 @@ def check_single_item(item_id):
 
 
 def run_server():
-    print("Starting Legendastique Server on http://localhost:5000")
+    print("Starting Legendastique Server on http://localhost:5001")
     
     # Start the automated background checker
     if not app.debug or os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
         scheduler.start()
     
-    app.run(port=5000, debug=True, use_reloader=False)
+    # Change port to 5001 to avoid conflict with zombie processes
+    app.run(port=5001, debug=True, use_reloader=False)
 
 if __name__ == '__main__':
     run_server()

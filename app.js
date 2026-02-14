@@ -89,7 +89,14 @@ const formatCurrency = (num) => {
 };
 
 const formatDate = (isoString) => {
-    return new Date(isoString).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+    return new Date(isoString).toLocaleString('en-GB', {
+        timeZone: 'Europe/London',
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
 };
 
 // --- Chart Helpers ---
@@ -280,9 +287,20 @@ function renderDashboard() {
     });
     const now = new Date();
     if (lastCheck) {
-        const timeStr = lastCheck.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        if (lastCheck.toDateString() === now.toDateString()) elements.lastCheckTime.textContent = `Today at ${timeStr}`;
-        else elements.lastCheckTime.textContent = `${lastCheck.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} at ${timeStr}`;
+        const options = { timeZone: 'Europe/London', hour: '2-digit', minute: '2-digit' };
+        const timeStr = lastCheck.toLocaleTimeString('en-GB', options);
+
+        // Check if "today" in UK time
+        const nowInUk = new Date().toLocaleDateString('en-GB', { timeZone: 'Europe/London' });
+        const checkInUk = lastCheck.toLocaleDateString('en-GB', { timeZone: 'Europe/London' });
+
+        if (nowInUk === checkInUk) {
+            elements.lastCheckTime.textContent = `Today at ${timeStr}`;
+        } else {
+            const dateStr = lastCheck.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'Europe/London' });
+            elements.lastCheckTime.textContent = `${dateStr} at ${timeStr}`;
+        }
+
     } else {
         elements.lastCheckTime.textContent = "Never";
     }
@@ -303,7 +321,29 @@ function renderDashboard() {
 
     filteredItems.forEach(item => {
         const category = item.category || 'Uncategorized';
-        const excludeBadges = item.excludeKeywords ? item.excludeKeywords.split(',').map(w => `<span class="exclude-badge">-${w.trim()}</span>`).join(' ') : '';
+
+        // Exclusion UI Logic
+        let excludeHtml = '';
+        if (item.excludeKeywords) {
+            const words = item.excludeKeywords.split(',').filter(w => w.trim());
+            if (words.length > 0) {
+                const count = words.length;
+                const tagsHtml = words.map(w => `<span class="exclude-badge" style="display:inline-block; margin:2px;">-${w.trim()}</span>`).join('');
+                excludeHtml = `
+                    <div class="exclusion-wrapper" style="display: inline-block;">
+                        <span class="tag-badge" style="background: rgba(239, 68, 68, 0.1); color: #fca5a5; cursor: pointer;" 
+                              onclick="toggleExclusions(event, ${item.id})">
+                            🚫 ${count} Excl.
+                        </span>
+                        <div id="exclusions-${item.id}" class="exclude-popover hidden" 
+                             style="position: absolute; background: #1e293b; border: 1px solid var(--card-border); padding: 8px; border-radius: 4px; z-index: 50; max-width: 200px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); margin-top: 4px;">
+                            ${tagsHtml}
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
         const sparkline = getSparkline(item.priceHistory);
 
         // Calculate Trend (Last v First in history or Last v Prev)
@@ -322,12 +362,15 @@ function renderDashboard() {
 
         const row = document.createElement('div');
         row.className = 'ticker-row';
+        // Ensure relative positioning for popover
+        row.style.position = 'relative';
+
         row.innerHTML = `
             <div class="item-name-cell">
                 <span class="item-name-main">${item.name}</span>
                 <div class="item-meta">
                     <span class="tag-badge">${category}</span>
-                    ${excludeBadges}
+                    ${excludeHtml}
                 </div>
             </div>
             
@@ -504,8 +547,24 @@ window.triggerPriceCheck = async function () {
     try {
         const response = await fetch('/api/check-prices', { method: 'POST' });
         const result = await response.json();
+
         if (response.ok) {
-            alert(`Check completed: \n\n${result.results.join('\n')} `);
+            // Format results into a readable string
+            const formattedResults = result.results.map(r => {
+                if (r.status === 'success') {
+                    // Check if price is a number before fixing
+                    const p = parseFloat(r.price);
+                    const priceStr = !isNaN(p) ? p.toFixed(2) : r.price;
+                    const confidence = r.rating ? `(${r.rating} Confidence)` : '';
+                    return `✅ ${r.name}: £${priceStr} ${confidence}`;
+                } else if (r.status === 'no_listings') {
+                    return `⚠️ ${r.name}: ${r.message || 'No market listings found'}`;
+                } else {
+                    return `❌ ${r.name}: Error (${r.message || 'Unknown'})`;
+                }
+            }).join('\n');
+
+            alert(`Check completed:\n\n${formattedResults}`);
             await loadState();
         } else {
             alert("Failed to check prices.");
@@ -718,4 +777,119 @@ if (elements.toggleStatsBtn) {
 
 // Init
 loadState();
+
+// --- Global Settings Logic & Helpers ---
+
+window.toggleExclusions = function (event, id) {
+    if (event) event.stopPropagation();
+    const el = document.getElementById(`exclusions-${id}`);
+    if (el) {
+        // Toggle hidden class
+        const isHidden = el.classList.contains('hidden');
+        // Close all other open popovers first
+        document.querySelectorAll('.exclude-popover').forEach(p => p.classList.add('hidden'));
+
+        if (isHidden) {
+            el.classList.remove('hidden');
+        }
+    }
+};
+
+window.togglePreset = function (checkbox) {
+    const input = document.getElementById('global-exclusions');
+    const keywords = checkbox.getAttribute('data-keywords');
+    if (!keywords) return;
+
+    let current = input.value.split(',').map(s => s.trim()).filter(s => s);
+    const keys = keywords.split(',').map(s => s.trim());
+
+    if (checkbox.checked) {
+        keys.forEach(k => {
+            if (!current.some(c => c.toLowerCase() === k.toLowerCase())) {
+                current.push(k);
+            }
+        });
+    } else {
+        current = current.filter(w => !keys.some(k => k.toLowerCase() === w.toLowerCase()));
+    }
+    input.value = current.join(', ');
+};
+
+window.openSettingsModal = async function () {
+    const modal = document.getElementById('settings-modal');
+    if (!modal) return;
+    toggleModal(modal, true);
+
+    const input = document.getElementById('global-exclusions');
+    input.value = "Loading...";
+    input.disabled = true;
+
+    try {
+        const res = await fetch('/api/settings');
+        if (res.ok) {
+            const settings = await res.json();
+            // Handle both string and list format returns
+            let val = settings.globalExclusions || '';
+            if (Array.isArray(val)) val = val.join(', ');
+            input.value = val;
+
+            // Sync checkboxes
+            const currentParts = val.toLowerCase().split(',').map(s => s.trim());
+            document.querySelectorAll('#settings-modal input[type="checkbox"]').forEach(box => {
+                const rawKeys = box.getAttribute('data-keywords');
+                if (rawKeys) {
+                    const keys = rawKeys.toLowerCase().split(',').map(s => s.trim());
+                    // Check if all keywords for this preset are present
+                    const allPresent = keys.every(k => currentParts.includes(k));
+                    box.checked = allPresent;
+                }
+            });
+
+        } else {
+            console.error("Failed to fetch settings");
+            input.value = "";
+        }
+    } catch (e) {
+        console.error("Failed to load settings", e);
+        input.value = "Error loading settings";
+    } finally {
+        input.disabled = false;
+    }
+};
+
+window.closeSettingsModal = function () {
+    const modal = document.getElementById('settings-modal');
+    if (modal) toggleModal(modal, false);
+};
+
+window.saveSettings = async function (event) {
+    if (event) event.preventDefault();
+    const input = document.getElementById('global-exclusions');
+    const exclusions = input.value; // Store as string (comma separated)
+
+    try {
+        const res = await fetch('/api/settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ globalExclusions: exclusions })
+        });
+
+        if (res.ok) {
+            alert("Settings saved! These will apply to all future checks.");
+            closeSettingsModal();
+        } else {
+            const err = await res.json();
+            alert("Failed to save settings: " + (err.error || "Unknown error"));
+        }
+    } catch (e) {
+        alert("Error saving settings: " + e.message);
+    }
+};
+
+// Close popovers on click outside
+document.addEventListener('click', function (event) {
+    if (!event.target.closest('.exclusion-wrapper')) {
+        document.querySelectorAll('.exclude-popover').forEach(p => p.classList.add('hidden'));
+    }
+});
 

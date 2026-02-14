@@ -89,3 +89,19 @@ class DataManager:
         # actually, the frontend might be easier to just send the *entire* updated item for now?
         # Let's support "Update Item" as a catch-all for now to be easiest for migration.
         pass
+
+    def get_settings(self):
+        self._load_data()
+        if "settings" not in self.data:
+            self.data["settings"] = {"globalExclusions": ""}
+            self._save_data()
+        return self.data["settings"]
+
+    def update_settings(self, updates):
+        self._load_data()
+        if "settings" not in self.data:
+            self.data["settings"] = {}
+        
+        self.data["settings"].update(updates)
+        self._save_data()
+        return self.data["settings"]
